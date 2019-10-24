@@ -30,13 +30,17 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'HelloWorld',
-  props: {
-    msg: String
-  }
+<script lang="ts">
+import Vue from 'vue'
+import Component from 'vue-class-component'
+import { VueComponent, Prop } from 'vue-typescript'
+
+@Component
+class HelloWorld extends Vue {
+  name = 'HelloWorld';
+  @Prop msg!: string;
 }
+export default HelloWorld
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
