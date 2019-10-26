@@ -1,21 +1,40 @@
 {
-    "compilerOptions": {
-        "experimentalDecorators": true,
-        "outDir": "./build",
-        "rootDir": "./src",
-        // this aligns with Vue's browser support
-        "target": "es2019",
-        // this enables stricter inference for data properties on `this`
-        "strict": true,
-        // if using webpack 2+ or rollup, to leverage tree shaking:
-        "module": "es2015",
-        "moduleResolution": "node"
-    },
-    "include": [
-        "src/**/*"
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "strict": true,
+    "jsx": "preserve",
+    "importHelpers": true,
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "allowJs": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "types": [
+      "webpack-env", "vuetify"
     ],
-    "exclude": [
-        "node_modules",
-        ".npm"
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable",
+      "scripthost"
     ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "tests/**/*.ts",
+    "tests/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
