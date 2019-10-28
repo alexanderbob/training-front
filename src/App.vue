@@ -1,39 +1,56 @@
 <template>
   <v-app>
-    <v-app-bar app>
-      <v-toolbar-title class="headline text-uppercase">
-        <span>Vuetify</span>
-        <span class="font-weight-light">MATERIAL DESIGN</span>
-      </v-toolbar-title>
+    <v-app-bar app clipped-left>
+      <v-toolbar-title>YOBA</v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-btn
-        text
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-      >
-        <span class="mr-2">Latest Release</span>
-      </v-btn>
+      <v-toolbar-items>
+        <v-btn href="/" v-on:click.stop.prevent="handleClick"><v-icon>mdi-monitor-dashboard</v-icon> Dashboard</v-btn>
+        <v-btn href="/Weightlifting" v-on:click.stop.prevent="handleClick"><v-icon>mdi-weight-lifter</v-icon> Weightlifting</v-btn>
+        <v-btn href="/Cycling" disabled v-on:click.stop.prevent="handleClick"><v-icon>mdi-bike</v-icon> Cycling</v-btn>
+      </v-toolbar-items>
     </v-app-bar>
 
     <v-content>
-      <HelloWorld/>
-      <DatePicker/>
+      <v-container fluid class="fill-height">
+        <router-view />
+      </v-container>
     </v-content>
+
+    <v-footer app>
+      <span>&copy; {{ thisYear }}</span>
+    </v-footer>
   </v-app>
 </template>
 
 <script lang="ts">
 import Vue from 'vue';
-import HelloWorld from './components/HelloWorld.vue';
-import DatePicker from './components/DatePicker.vue';
+import Component from 'vue-class-component'
+import router from './router';
 
-export default Vue.extend({
-  name: 'App',
-  components: {
-    HelloWorld, DatePicker
-  },
-  data: () => ({
+@Component
+class App extends Vue {
+  private drawer: boolean;
+  constructor() {
+      super();
+      this.drawer = false;
+  }
+
+  get thisYear() {
+    return new Date().getFullYear();
+  }
+
+  navbarClick() {
+    this.drawer = !this.drawer;
+  }
+
+  handleClick(e: MouseEvent) {
     //
-  }),
-});
+    if (e.currentTarget != null)
+    {
+      router.push((e.currentTarget as HTMLElement).getAttribute("href") || "");
+    }
+  }
+}
+
+export default App;
 </script>

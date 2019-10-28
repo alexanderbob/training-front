@@ -1,27 +1,49 @@
 <template>
   <v-row justify="space-around">
-    <v-date-picker v-model="picker" landscape reactive show-current type="date" :events="functionEvents"></v-date-picker>
+    <v-date-picker
+      v-bind:value="value"
+      v-on:change="dateChangedHandler"
+      landscape
+      reactive
+      type="date"
+      min="2016-01-01"
+      :first-day-of-week="1"
+      :allowed-dates="isDateAllowedHandler"
+      :events="functionEvents"
+      :disabled="isDisabled"
+    ></v-date-picker>
   </v-row>
 </template>
 
 <script lang="ts">
-import Vue from 'vue';
-import Component from 'vue-class-component'
+import Vue from "vue";
+import { Component, Prop } from "vue-property-decorator";
 
 @Component
 class DatePicker extends Vue {
-  private picker: string;
+  @Prop()
+  isDisabled!: boolean;
+  @Prop()
+  value!: string;
+  //ISO-formatted array of strings YYYY-MM-DD
+  @Prop({required: true})
+  trainingDates!: string[];
   constructor() {
-      super();
-      this.picker = new Date().toISOString().substr(0, 10);
+    super();
   }
 
-  functionEvents (date: string) {
-        const [,, day] = date.split('-')
-        if ([12, 17, 28].includes(parseInt(day, 10))) return true
-        if ([1, 19, 22].includes(parseInt(day, 10))) return ['red', '#00f']
-        return false
-    }
+  //date in YYYY-MM-DD format
+  isDateAllowedHandler(isoDate: string) {
+    return !this.trainingDates.includes(isoDate);
+  }
+
+  functionEvents(date: string) {
+    return this.trainingDates.includes(date);
+  }
+
+  dateChangedHandler(newDate: string) {
+    this.$emit('input', newDate);
+  }
 }
 
 export default DatePicker;
