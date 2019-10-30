@@ -1,62 +1,20 @@
 <template>
   <div>
     <!-- Create Training Day dialog -->
-    <v-dialog v-model="isTrainDayDialogVisible" persistent>
-      <v-card>
-        <v-card-title class="headline">Please choose a date</v-card-title>
-        <v-card-text>
-          <DatePicker
-            v-model="newTrainingDayPicker"
-            :trainingDates="getTrainingDates"
-            :isDisabled="!isDataLoaded"
-          ></DatePicker>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn
-            color="primary"
-            @click="createNewTrainingDayHandler"
-            :disabled="isTrainingDayCreationDisabled"
-          >Create</v-btn>
-          <v-btn @click="isTrainDayDialogVisible = false">Cancel</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <TrainingDayDialog
+      :isDialogVisible="isTrainDayDialogVisible"
+      v-on:input="createNewTrainingDayHandler"
+      v-on:hide="toggleCreateNewDayDialog"
+      :trainingDates="getTrainingDates"
+      :isCalendarDisabled="!isDataLoaded"
+    ></TrainingDayDialog>
     <!-- Edit Exercise dialog -->
-    <v-dialog v-model="isEditExerciseDialogVisible" persistent>
-      <v-card>
-        <v-card-title class="headline">Edit Exercise</v-card-title>
-        <v-card-text>
-          <v-form v-model="isEditExerciseFormValid">
-            <v-container>
-              <v-row>
-                <v-col cols="12">
-                  <v-autocomplete 
-                    label="Exercise Name" 
-                    :items="exerciseNames.map((v) => v.description)" 
-                    :value="exerciseNames[selectedExerciseCode]" 
-                    required
-                  ></v-autocomplete>
-                </v-col>
-              </v-row>
-              <v-row v-for="item in setsForPickedExercise" :key="item.id">
-                <v-col cols="6">
-                  <v-text-field label="Weight" required v-model="item.weight"></v-text-field>
-                </v-col>
-                <v-col cols="6">
-                  <v-text-field label="Reps" required v-model="item.repetitions"></v-text-field>
-                </v-col>
-              </v-row>
-            </v-container>
-          </v-form>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" @click="applyExerciseChanges" :disabled="!isEditExerciseFormValid">Save</v-btn>
-          <v-btn @click="isEditExerciseDialogVisible = false">Cancel</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <EditExerciseDialog
+      :isEditExerciseDialogVisible="isEditExerciseDialogVisible"
+      :exerciseEntry="currentExercise"
+      v-on:input="applyExerciseChanges"
+      v-on:hide="toggleEditExerciseDialog"
+    ></EditExerciseDialog>
     <v-row align="stretch" justify="center">
       <v-col cols="4">
         <v-btn color="primary">
@@ -67,120 +25,68 @@
     </v-row>
     <v-row align="stretch" justify="center">
       <v-col cols="4">
-        <v-list>
-          <v-list-item v-on:click.stop="showCreateNewDayDialog">
-            <v-list-item-action>
-              <v-icon>mdi-plus</v-icon>
-            </v-list-item-action>
-            <v-list-item-content>
-              <v-list-item-title>Add new</v-list-item-title>
-            </v-list-item-content>
-          </v-list-item>
-        </v-list>
-        <v-list two-line>
-          <v-subheader>HISTORY</v-subheader>
-          <v-list-item-group v-model="selectedTrainDateItem" color="primary">
-            <v-list-item v-for="(item) in history" :key="item.date">
-              <v-list-item-content>
-                <v-list-item-title v-html="item.title"></v-list-item-title>
-                <v-list-item-subtitle v-html="item.subtitle"></v-list-item-subtitle>
-              </v-list-item-content>
-            </v-list-item>
-          </v-list-item-group>
-        </v-list>
+        <TrainingDaysColumn
+          :addNewButtonHandler="toggleCreateNewDayDialog"
+          :history="history"
+          :value="selectedTrainingDate"
+          v-on:input="updateTrainDateItem"
+        ></TrainingDaysColumn>
       </v-col>
       <v-col>
-        <v-list two-line>
-          <v-list-item v-on:click="addNewExerciseClick">
-            <v-list-item-action>
-              <v-icon>mdi-plus</v-icon>
-            </v-list-item-action>
-            <v-list-item-content>
-              <v-list-item-title>Add new</v-list-item-title>
-            </v-list-item-content>
-          </v-list-item>
-          <v-subheader>Exercises for {{ orderedHistory[selectedTrainDateItem].title }}</v-subheader>
-          <v-list-item
-            v-for="(item, key) in exercises[orderedHistory[selectedTrainDateItem].date]"
-            :key="item.id"
-            v-on:click="editExerciseClick(key)"
-          >
-            <v-list-item-content>
-              <v-list-item-title v-html="item.title"></v-list-item-title>
-              <v-list-item-subtitle v-html="toSubtitle(item.sets)"></v-list-item-subtitle>
-            </v-list-item-content>
-          </v-list-item>
-        </v-list>
+        <ExercisesColumn
+          v-if="selectedTrainingDate !== ''"
+          :historyEntry="history[selectedTrainingDate]"
+          :exercises="exercises[selectedTrainingDate]"
+          :addNewExerciseClickHandler="addNewExerciseClick"
+          v-on:input="editExerciseInput"
+        ></ExercisesColumn>
       </v-col>
     </v-row>
   </div>
 </template>
 
 <script lang="ts">
+import { HistoryEntry, ExerciseEntry, ExerciseMetadata, ExerciseSetData } from '../declarations/weightlifting';
 import Vue from "vue";
 import Component from "vue-class-component";
-import DatePicker from "../components/DatePicker.vue";
+import TrainingDayDialog from "../components/TrainingDayDialog.vue";
+import EditExerciseDialog from "../components/EditExerciseDialog.vue";
+import TrainingDaysColumn from "../components/TrainingDaysColumn.vue";
+import ExercisesColumn from "../components/ExercisesColumn.vue";
 import { Dictionary } from "vue-router/types/router";
 import { Prop } from "vue-property-decorator";
 
-interface EntryWithTitle {
-  title: string;
-}
-
-interface HistoryEntry extends EntryWithTitle {
-  date: string;
-  subtitle: string;
-}
-
-interface ExerciseSetData {
-  id: string;
-  repetitions: number | number[];
-  weight: number | number[];
-}
-
-interface ExerciseEntry extends EntryWithTitle {
-  id: string;
-  sets: ExerciseSetData[];
-}
-
-interface ExerciseMetadata {
-  code: string;
-  description: string;
-}
-
 @Component({
   components: {
-    DatePicker
+    TrainingDayDialog, TrainingDaysColumn, EditExerciseDialog, ExercisesColumn
   }
 })
 class Weightlifting extends Vue {
-  private newTrainingDayPicker: string;
-  private isTrainDayDialogVisible: boolean;
-  private selectedTrainDateItem: number;
-  private selectedExerciseCode: string;
-  private history: Dictionary<HistoryEntry>;
-  private exercises: Dictionary<Dictionary<ExerciseEntry>>;
-  private isDataLoaded: boolean;
-  private exerciseNames: ExerciseMetadata[];
-  private isEditExerciseFormValid: boolean;
-  private isEditExerciseDialogVisible: boolean;
+  private isTrainDayDialogVisible: boolean = false;
+  private selectedTrainingDate: string = "";
+  private selectedExerciseCode: string = "";
+  private history: Dictionary<HistoryEntry> = {};
+  private exercises: Dictionary<Dictionary<ExerciseEntry>> = {};
+  private isDataLoaded: boolean = false;
+  private exerciseNames: ExerciseMetadata[] = [];
+  private isEditExerciseDialogVisible: boolean = false;
   constructor() {
     super();
-    this.newTrainingDayPicker = new Date().toISOString().substr(0, 10);
-    this.selectedTrainDateItem = 0;
-    this.selectedExerciseCode = "";
-    this.history = {};
-    this.exercises = {};
-    this.exerciseNames = [];
-    this.isTrainDayDialogVisible = false;
-    this.isDataLoaded = false;
-    this.isEditExerciseFormValid = false;
-    this.isEditExerciseDialogVisible = false;
   }
 
-  private get setsForPickedExercise() {
+  private get currentExercise(): ExerciseEntry {
     var code = this.selectedExerciseCode;
-    return this.exercises[this.orderedHistory[this.selectedTrainDateItem].date][code];
+    if (this.selectedTrainingDate === "" || code == "") {
+      return {
+        id: "",
+        metadata: {
+          code: "",
+          description: ""
+        },
+        sets: []
+      };
+    }
+    return this.exercises[this.selectedTrainingDate][code];
   }
 
   private get getTrainingDates() {
@@ -196,12 +102,8 @@ class Weightlifting extends Vue {
     return result;
   }
 
-  private toSubtitle(data: ExerciseSetData[]) {
-    return data
-      .map((v, i, arr) => {
-        return v.weight + " &times; " + v.repetitions;
-      })
-      .join(", ");
+  private updateTrainDateItem(key: string) {
+    this.selectedTrainingDate = key;
   }
 
   private test(data: any) {
@@ -212,37 +114,38 @@ class Weightlifting extends Vue {
     //TODO: show exercise creation dialog
   }
 
-  private editExerciseClick(exerciseCode: string) {
+  private editExerciseInput(exerciseCode: string) {
     this.selectedExerciseCode = exerciseCode;
-    this.isEditExerciseDialogVisible = true;
+    this.toggleEditExerciseDialog();
   }
 
-  private showCreateNewDayDialog() {
-    this.isTrainDayDialogVisible = true;
+  private toggleCreateNewDayDialog() {
+    this.isTrainDayDialogVisible = !this.isTrainDayDialogVisible;
   }
 
-  private isTrainingDayCreationDisabled() {
-    return this.newTrainingDayPicker in this.history;
+  private toggleEditExerciseDialog() {
+    this.isEditExerciseDialogVisible = !this.isEditExerciseDialogVisible;
   }
 
   private applyExerciseChanges() {
-    
+    //TODO: apply changes here
+    this.toggleEditExerciseDialog();
   }
 
-  private createNewTrainingDayHandler() {
-    var date = new Date(this.newTrainingDayPicker);
-    if (this.history[this.newTrainingDayPicker]) {
+  private createNewTrainingDayHandler(trainingDate: string) {
+    var date = new Date(trainingDate);
+    if (this.history[trainingDate]) {
       throw new Error(
         "Attempted to create duplicate training day for " +
-          this.newTrainingDayPicker
+          trainingDate
       );
     }
-    this.history[this.newTrainingDayPicker] = {
+    Vue.set(this.history, trainingDate, {
       date: this.isoDate(date),
       title: this.readableDate(date),
       subtitle: ""
-    };
-    this.exercises[this.newTrainingDayPicker] = {};
+    });
+    Vue.set(this.exercises, trainingDate, {});
   }
 
   private created() {
@@ -264,13 +167,13 @@ class Weightlifting extends Vue {
       date.setDate(date.getDate() - i);
       var fancyDate = this.readableDate(date);
       var isoDate = this.isoDate(date);
-      this.history[isoDate] = {
+      Vue.set<HistoryEntry>(this.history, isoDate, {
         date: isoDate,
         title: fancyDate,
         subtitle:
           "Exercise on " + fancyDate + " " + this.exerciseNames.map((v) => v.description).join(", ")
-      };
-      this.exercises[isoDate] = {};
+      });
+      Vue.set<Dictionary<ExerciseEntry>>(this.exercises, isoDate, {});
       this.exerciseNames.forEach(element => {
         let setsData: ExerciseSetData[] = [];
         let sets = Math.round(1 + 5 * Math.random());
@@ -281,11 +184,11 @@ class Weightlifting extends Vue {
             id: this.generateUUID()
           });
         }
-        this.exercises[isoDate][element.code] = {
-          title: element.description,
+        Vue.set<ExerciseEntry>(this.exercises[isoDate], element.code, {
+          metadata: element,
           sets: setsData,
           id: this.generateUUID()
-        };
+        });
       });
     }
   }
@@ -299,7 +202,13 @@ class Weightlifting extends Vue {
   }
 
   private isoDate(date: Date) {
-    return date.toISOString().substr(0, 10);
+    return (
+      date.getDate() +
+      " " +
+      date.getMonth() +
+      " " +
+      date.getFullYear()
+    );
   }
 
   private readableDate(date: Date) {
