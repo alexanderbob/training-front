@@ -27,6 +27,7 @@ import Vue from "vue";
 import Component from "vue-class-component";
 import {Prop} from "vue-property-decorator";
 import DatePicker from "./DatePicker.vue";
+import Utils from "../utils";
 
 @Component({
     components: {
@@ -34,7 +35,7 @@ import DatePicker from "./DatePicker.vue";
     }
 })
 class TrainingDayDialog extends Vue {
-    private datePickerValue: string = new Date().toISOString().substr(0, 10);
+    private datePickerValue: string = Utils.isoDate(new Date());
     @Prop({required: true})
     private isDialogVisible!: boolean;
     @Prop({ required: true })
@@ -46,18 +47,8 @@ class TrainingDayDialog extends Vue {
         super();
     }
 
-    private created() {
-        let maxTrainDate: string = "";
-        for (let key in this.trainingDates) {
-            if (this.trainingDates[key] > maxTrainDate) {
-                maxTrainDate = this.trainingDates[key];
-            }
-        }
-        this.datePickerValue = maxTrainDate;
-    }
-
     private get isTrainingDayCreationDisabled() {
-        return this.trainingDates.includes(this.datePickerValue);
+        return !this.datePickerValue || this.trainingDates.includes(this.datePickerValue);
     }
 
     private createButtonClickHandler() {

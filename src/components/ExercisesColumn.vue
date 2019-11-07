@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <v-col cols="6">
     <v-list two-line>
       <v-list-item>
         <v-list-item-content>
@@ -35,7 +35,7 @@
         </v-list-item-content>
       </v-list-item>
     </v-list>
-  </div>
+  </v-col>
 </template>
 
 <script lang="ts">
@@ -52,7 +52,8 @@ class ExercisesColumn extends Vue {
   private historyEntry!: HistoryEntry;
   @Prop()
   private exercises!: Dictionary<HistoryEntry>;
-
+  @Prop()
+  private exerciseNames!: ExerciseMetadata[];
   private newExercise: ExerciseMetadata | null = null;
 
   private get availableExerciseItems() {
@@ -61,7 +62,7 @@ class ExercisesColumn extends Vue {
       value: ExerciseMetadata
     }[] = [];
     let usedKeys = Object.keys(this.exercises);
-    Utils.exerciseNames.forEach(element => {
+    this.exerciseNames.forEach(element => {
       if (!usedKeys.includes(element.code)) {
         result.push({
           text: element.description,
@@ -73,7 +74,7 @@ class ExercisesColumn extends Vue {
   }
 
   private get isAddNewDisabled() {
-    return Object.keys(this.exercises).length === Utils.exerciseNames.length;
+    return Object.keys(this.exercises).length === this.exerciseNames.length;
   }
 
   private editExerciseClickHandler(key: string) {

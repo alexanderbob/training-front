@@ -1,19 +1,7 @@
 import { ExerciseMetadata } from './declarations/weightlifting';
 
 export default class Utils {
-    public static readonly exerciseNames: ExerciseMetadata[] = 
-    [
-        { code: "squats", description: "Squats" },
-        { code: "deadlift", description: "Dead Lift" },
-        { code: "benchpress", description: "Bench Press" },
-        { code: "legpress", description: "Leg Press" },
-        { code: "longpull", description: "Long Bull" },
-        { code: "frenchpress", description: "French Press" },
-        { code: "bicepsbench", description: "Biceps Bench" },
-        { code: "bicepsdumbbell", description: "Biceps Dumbbell" },
-        { code: "tricepsbarbell", description: "Triceps Barbell" },
-        { code: "tricepspull", description: "Triceps Pull" }
-      ];
+    public static readonly BackendUrl = "https://localhost:5001/api";
 
     public static generateUUID(): string {
         return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {

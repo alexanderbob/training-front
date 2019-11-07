@@ -9,8 +9,8 @@ export interface HistoryEntry extends EntryWithTitle {
 
 export interface ExerciseSetData {
     id: string;
-    repetitions: number | number[];
-    weight: number | number[];
+    repetitions: number;
+    weight: number;
 }
 
 export interface ExerciseEntry {

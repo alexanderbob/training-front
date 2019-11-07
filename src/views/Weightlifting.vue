@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <v-container fluid class="fill-height">
     <!-- Create Training Day dialog -->
     <TrainingDayDialog
       :isDialogVisible="isTrainDayDialogVisible"
@@ -12,12 +12,13 @@
     <EditExerciseDialog
       :isEditExerciseDialogVisible="isEditExerciseDialogVisible"
       :exerciseEntry="currentExercise"
+      :isLoading="isEditExerciseLoading"
       v-on:input="addNewSetToExercise"
       v-on:save="applyExerciseChanges"
       v-on:remove="removeExerciseSet"
-      v-on:hide="toggleEditExerciseDialog"
+      v-on:hide="cancelEditExerciseChanges"
     ></EditExerciseDialog>
-    <v-row align="stretch" justify="center">
+    <v-row align="stretch" justify="start">
       <v-col cols="4">
         <v-btn color="primary" disabled>
           <v-icon>mdi-calendar-search</v-icon>Search
@@ -26,25 +27,23 @@
       <v-col></v-col>
     </v-row>
     <v-row align="stretch" justify="center">
-      <v-col cols="4">
-        <TrainingDaysColumn
-          :addNewButtonHandler="toggleCreateNewDayDialog"
-          :history="history"
-          :value="selectedTrainingDate"
-          v-on:input="updateTrainDateItem"
-        ></TrainingDaysColumn>
-      </v-col>
-      <v-col>
-        <ExercisesColumn
-          v-if="selectedTrainingDate !== ''"
-          :historyEntry="history[selectedTrainingDate]"
-          :exercises="exercises[selectedTrainingDate]"
-          v-on:input="editExerciseInput"
-          v-on:create="addExerciseHandler"
-        ></ExercisesColumn>
-      </v-col>
+      <TrainingDaysColumn
+        :addNewButtonHandler="toggleCreateNewDayDialog"
+        :history="history"
+        :value="selectedTrainingDate"
+        v-on:input="updateTrainDateItem"
+      ></TrainingDaysColumn>
+
+      <ExercisesColumn
+        v-if="selectedTrainingDate != ''"
+        :historyEntry="history[selectedTrainingDate]"
+        :exercises="bufferedExercises"
+        :exerciseNames="exerciseRegistry"
+        v-on:input="editExerciseInput"
+        v-on:create="addExerciseHandler"
+      ></ExercisesColumn>
     </v-row>
-  </div>
+  </v-container>
 </template>
 
 <script lang="ts">
@@ -63,6 +62,7 @@ import ExercisesColumn from "../components/ExercisesColumn.vue";
 import { Dictionary } from "vue-router/types/router";
 import { Prop } from "vue-property-decorator";
 import Utils from "../utils";
+import ApiClient from "../api/client";
 
 @Component({
   components: {
@@ -73,20 +73,25 @@ import Utils from "../utils";
   }
 })
 class Weightlifting extends Vue {
+  private exerciseRegistry: ExerciseMetadata[] = [];
   private isTrainDayDialogVisible: boolean = false;
   private isEditExerciseDialogVisible: boolean = false;
   private selectedTrainingDate: string = "";
   private selectedExerciseCode: string = "";
+  private apiClient: ApiClient;
   private history: Dictionary<HistoryEntry> = {};
   private exercises: Dictionary<Dictionary<ExerciseEntry>> = {};
   private isDataLoaded: boolean = false;
+  private bufferedExercises: Dictionary<ExerciseEntry> = {};
+  private isEditExerciseLoading: boolean = false;
   constructor() {
     super();
+    this.apiClient = new ApiClient(Utils.BackendUrl);
   }
 
   private get currentExercise(): ExerciseEntry {
     var code = this.selectedExerciseCode;
-    if (this.selectedTrainingDate === "" || code == "") {
+    if (code == "" || this.bufferedExercises === null) {
       return {
         id: "",
         metadata: {
@@ -96,11 +101,11 @@ class Weightlifting extends Vue {
         sets: []
       };
     }
-    return this.exercises[this.selectedTrainingDate][code];
+    return this.bufferedExercises[code];
   }
 
   private get availableExercises() {
-    return Utils.exerciseNames.filter((v, i, arr) => {
+    return this.exerciseRegistry.filter((v, i, arr) => {
       !Object.keys(this.exercises[this.selectedTrainingDate]).includes(v.code);
     });
   }
@@ -111,6 +116,21 @@ class Weightlifting extends Vue {
 
   private updateTrainDateItem(key: string) {
     this.selectedTrainingDate = key;
+    if (this.exercises[this.selectedTrainingDate]) {
+      this.setBufferedExercise(this.exercises[this.selectedTrainingDate]);
+      return;
+    }
+
+    this.apiClient.getExercises(this.selectedTrainingDate).then(v => {
+      Object.keys(v).forEach(key => {
+        v[key].id = Utils.generateUUID();
+        v[key].sets.forEach(setEntry => {
+          setEntry.id = Utils.generateUUID();
+        });
+      });
+      this.exercises[this.selectedTrainingDate] = v;
+      this.setBufferedExercise(this.exercises[this.selectedTrainingDate]);
+    });
   }
 
   private test(data: any) {
@@ -118,21 +138,26 @@ class Weightlifting extends Vue {
   }
 
   private addExerciseHandler(metadata: ExerciseMetadata) {
-    if (metadata.code in this.exercises[this.selectedTrainingDate]) {
+    if (metadata.code in this.bufferedExercises) {
       throw new Error(
         "Provided exercise '" + metadata.code + "' is already in collection!"
       );
     }
-    Vue.set<ExerciseEntry>(
-      this.exercises[this.selectedTrainingDate],
-      metadata.code,
-      {
-        id: Utils.generateUUID(),
-        metadata: metadata,
-        sets: []
-      }
-    );
-    //TODO: send API request to create new entry
+    this.apiClient
+      .setExercise(this.selectedTrainingDate, metadata.code, [])
+      .then(v => {
+        let exercise: ExerciseEntry = {
+          id: Utils.generateUUID(),
+          metadata: metadata,
+          sets: []
+        };
+        Vue.set<ExerciseEntry>(
+          this.exercises[this.selectedTrainingDate],
+          metadata.code,
+          exercise
+        );
+        this.setBufferedExercise(this.exercises[this.selectedTrainingDate]);
+      });
   }
 
   private editExerciseInput(exerciseCode: string) {
@@ -148,12 +173,40 @@ class Weightlifting extends Vue {
     this.isEditExerciseDialogVisible = !this.isEditExerciseDialogVisible;
   }
 
+  private cancelEditExerciseChanges() {
+    this.setBufferedExercise(this.exercises[this.selectedTrainingDate]);
+    this.toggleEditExerciseDialog();
+  }
+
+  private applyExerciseChanges(exerciseEntry: ExerciseEntry) {
+    this.isEditExerciseLoading = true;
+    this.apiClient
+      .setExercise(
+        this.selectedTrainingDate,
+        exerciseEntry.metadata.code,
+        exerciseEntry.sets
+      )
+      .then(v => {
+        this.isEditExerciseLoading = false;
+        Vue.set<ExerciseEntry>(
+          this.exercises[this.selectedTrainingDate],
+          exerciseEntry.metadata.code,
+          JSON.parse(JSON.stringify(exerciseEntry))
+        );
+        this.toggleEditExerciseDialog();
+      });
+  }
+
   private addNewSetToExercise(exerciseEntry: ExerciseEntry) {
     exerciseEntry.sets.push({
       id: Utils.generateUUID(),
       repetitions: 0,
       weight: 0
     });
+  }
+
+  private setBufferedExercise(source: Dictionary<ExerciseEntry>) {
+    this.bufferedExercises = JSON.parse(JSON.stringify(source));
   }
 
   private removeExerciseSet(exerciseEntry: ExerciseEntry, itemId: string) {
@@ -166,11 +219,6 @@ class Weightlifting extends Vue {
     exerciseEntry.sets.splice(removeIndex, 1);
   }
 
-  private applyExerciseChanges(exerciseEntry: ExerciseEntry) {
-    //TODO: apply changes here
-    this.toggleEditExerciseDialog();
-  }
-
   private createNewTrainingDayHandler(trainingDate: string) {
     var date = new Date(trainingDate);
     if (this.history[trainingDate]) {
@@ -178,77 +226,28 @@ class Weightlifting extends Vue {
         "Attempted to create duplicate training day for " + trainingDate
       );
     }
-    Vue.set<HistoryEntry>(this.history, trainingDate, {
+    let dateToAllocate: HistoryEntry = {
       date: Utils.isoDate(date),
       title: Utils.readableDate(date),
       subtitle: ""
+    };
+    this.apiClient.allocateTrainingDate(dateToAllocate).then(v => {
+      Vue.set<HistoryEntry>(this.history, trainingDate, dateToAllocate);
     });
-    Vue.set<Dictionary<ExerciseEntry>>(this.exercises, trainingDate, {});
   }
 
   private created() {
-    this.isDataLoaded = true;
-    for (let i = 0; i < 15; i++) {
-      let date = new Date();
-      date.setDate(date.getDate() - i);
-      var fancyDate = Utils.readableDate(date);
-      var isoDate = Utils.isoDate(date);
-      Vue.set<HistoryEntry>(this.history, isoDate, {
-        date: isoDate,
-        title: fancyDate,
-        subtitle:
-          "Exercise on " +
-          fancyDate +
-          " " +
-          Utils.exerciseNames.map(v => v.description).join(", ")
+    this.apiClient.getTrainingDays().then(data => {
+      let result: Dictionary<HistoryEntry> = {};
+      data.forEach(element => {
+        result[element.date] = element;
       });
-      Vue.set<Dictionary<ExerciseEntry>>(this.exercises, isoDate, {});
-
-      let shuffledKeys = this.shuffle(
-        Array.from(Array(Utils.exerciseNames.length).keys())
-      );
-
-      for (let k = 0; k < shuffledKeys.length - 3; k++) {
-        let setsData: ExerciseSetData[] = [];
-        let sets = Math.round(1 + 5 * Math.random());
-        for (let j = 0; j < sets; j++) {
-          setsData.push({
-            repetitions: Math.round(1 + 20 * Math.random()),
-            weight: Math.round(1 + 100 * Math.random()),
-            id: Utils.generateUUID()
-          });
-        }
-        Vue.set<ExerciseEntry>(
-          this.exercises[isoDate],
-          Utils.exerciseNames[k].code,
-          {
-            metadata: Utils.exerciseNames[k],
-            sets: setsData,
-            id: Utils.generateUUID()
-          }
-        );
-      }
-    }
-  }
-
-  private shuffle(array: number[]) {
-    var currentIndex = array.length,
-      temporaryValue,
-      randomIndex;
-
-    // While there remain elements to shuffle...
-    while (0 !== currentIndex) {
-      // Pick a remaining element...
-      randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex -= 1;
-
-      // And swap it with the current element.
-      temporaryValue = array[currentIndex];
-      array[currentIndex] = array[randomIndex];
-      array[randomIndex] = temporaryValue;
-    }
-
-    return array;
+      this.isDataLoaded = true;
+      this.history = result;
+    });
+    this.apiClient.availableExercises().then(data => {
+      this.exerciseRegistry = data;
+    });
   }
 }
 

@@ -11,19 +11,20 @@
                   label="Exercise Name"
                   :value="exerciseEntry.metadata.description"
                   :items="[exerciseEntry.metadata.description]"
+                  :loading="isLoading"
                   disabled
                 ></v-autocomplete>
               </v-col>
             </v-row>
             <v-row align="center" v-for="item in exerciseEntry.sets" :key="item.id">
               <v-col cols="6">
-                <v-text-field label="Weight" required v-model="item.weight"></v-text-field>
+                <v-text-field label="Weight" required v-model="item.weight" type="number" step="0.5" :disabled="isLoading"></v-text-field>
               </v-col>
               <v-col cols="5">
-                <v-text-field label="Reps" required v-model="item.repetitions"></v-text-field>
+                <v-text-field label="Reps" required v-model="item.repetitions" type="number" step="0.5" :disabled="isLoading"></v-text-field>
               </v-col>
               <v-col cols="1">
-                <v-btn text icon small color="red lighten-2" @click="removeItemHandler(item.id)" tabindex="-1">
+                <v-btn text icon small color="red lighten-2" @click="removeItemHandler(item.id)" tabindex="-1" :disabled="isLoading">
                   <v-icon>mdi-table-row-remove</v-icon>
                 </v-btn>
               </v-col>
@@ -33,9 +34,9 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn @click="addNewClickHandler">Add</v-btn>
-        <v-btn color="primary" @click="saveClickHandler" :disabled="!isEditExerciseFormValid">Save</v-btn>
-        <v-btn color="secondary" @click="cancelClickHandler">Cancel</v-btn>
+        <v-btn @click="addNewClickHandler" :loading="isLoading" :disabled="isLoading">Add</v-btn>
+        <v-btn color="primary" @click="saveClickHandler" :loading="isLoading" :disabled="!isEditExerciseFormValid && !isLoading">Save</v-btn>
+        <v-btn color="secondary" @click="cancelClickHandler" :loading="isLoading" :disabled="isLoading">Cancel</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -53,6 +54,8 @@ class EditExerciseDialog extends Vue {
   private isEditExerciseDialogVisible!: boolean;
   @Prop({ required: true })
   private exerciseEntry!: ExerciseEntry;
+  @Prop({ required: true })
+  private isLoading!: boolean;
   private isEditExerciseFormValid: boolean = true;
 
   constructor() {
