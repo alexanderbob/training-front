@@ -42,7 +42,7 @@
 import Vue from "vue";
 import Component from "vue-class-component";
 import { Prop } from "vue-property-decorator";
-import { ExerciseSetData, HistoryEntry, ExerciseMetadata } from "../declarations/weightlifting";
+import { ExerciseSetData, HistoryEntry, ExerciseMetadata, ExerciseEntry } from "../declarations/weightlifting";
 import { Dictionary } from "vue-router/types/router";
 import Utils from "../utils";
 
@@ -51,7 +51,7 @@ class ExercisesColumn extends Vue {
   @Prop()
   private historyEntry!: HistoryEntry;
   @Prop()
-  private exercises!: Dictionary<HistoryEntry>;
+  private exercises!: Dictionary<ExerciseEntry>;
   @Prop()
   private exerciseNames!: ExerciseMetadata[];
   private newExercise: ExerciseMetadata | null = null;
@@ -74,7 +74,7 @@ class ExercisesColumn extends Vue {
   }
 
   private get isAddNewDisabled() {
-    return Object.keys(this.exercises).length === this.exerciseNames.length;
+    return Object.keys(this.exercises).length === this.exerciseNames.length || this.newExercise === null;
   }
 
   private editExerciseClickHandler(key: string) {

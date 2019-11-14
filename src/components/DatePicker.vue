@@ -3,6 +3,7 @@
     <v-date-picker
       v-bind:value="value"
       v-on:change="dateChangedHandler"
+      v-on:update:picker-date="pickerDateHandler"
       landscape
       reactive
       type="date"
@@ -28,6 +29,7 @@ class DatePicker extends Vue {
   //ISO-formatted array of strings YYYY-MM-DD
   @Prop({required: true})
   trainingDates!: string[];
+  private lastPickerMonth!: string;
   constructor() {
     super();
   }
@@ -43,6 +45,18 @@ class DatePicker extends Vue {
 
   dateChangedHandler(newDate: string) {
     this.$emit('input', newDate);
+  }
+
+  pickerDateHandler(val: string) {
+    if (!this.lastPickerMonth) {
+      this.lastPickerMonth = val;
+      return;
+    }
+    if (this.lastPickerMonth === val) {
+      return;
+    }
+    this.$emit('view-change', val);
+    this.lastPickerMonth = val;
   }
 }
 

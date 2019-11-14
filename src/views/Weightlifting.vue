@@ -5,6 +5,7 @@
       :isDialogVisible="isTrainDayDialogVisible"
       v-on:input="createNewTrainingDayHandler"
       v-on:hide="toggleCreateNewDayDialog"
+      v-on:view-change="trainingCalendarChangeHandler"
       :trainingDates="getTrainingDates"
       :isCalendarDisabled="!isDataLoaded"
     ></TrainingDayDialog>
@@ -133,10 +134,6 @@ class Weightlifting extends Vue {
     });
   }
 
-  private test(data: any) {
-    var hui = data;
-  }
-
   private addExerciseHandler(metadata: ExerciseMetadata) {
     if (metadata.code in this.bufferedExercises) {
       throw new Error(
@@ -217,6 +214,24 @@ class Weightlifting extends Vue {
       throw new Error("Could not find exercise for removal!");
     }
     exerciseEntry.sets.splice(removeIndex, 1);
+  }
+
+  //newMonth is in yyyy-MM format
+  private trainingCalendarChangeHandler(newMonth: string) {
+    let from = `${newMonth}-01`;
+    let td = new Date(`${newMonth}-01`);
+    td.setMonth(td.getMonth() + 1);
+    let to = Utils.isoDate(td);
+    this.apiClient.getTrainingDays({from: from, to: to}).then(v => {
+      let result: Dictionary<HistoryEntry> = {};
+      v.forEach(element => {
+        if (!(element.date in this.history)) {
+          Vue.set<HistoryEntry>(
+            this.history, element.date, element
+          );
+        }
+      });
+    });
   }
 
   private createNewTrainingDayHandler(trainingDate: string) {

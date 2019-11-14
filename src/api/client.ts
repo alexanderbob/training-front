@@ -25,9 +25,15 @@ export default class ApiClient {
         return response;
     }
 
-    public async getTrainingDays(): Promise<HistoryEntry[]> {
-        let response = await this.sendRequest(`${this.backendUrl}/training`);
-        return response.json();
+    public async getTrainingDays(dateRange?: {from: string, to: string}): Promise<HistoryEntry[]> {
+        if (dateRange === undefined) {
+            let response = await this.sendRequest(`${this.backendUrl}/training`);
+            return response.json();
+        }
+        else {
+            let response = await this.sendRequest(`${this.backendUrl}/training/range/from/${dateRange.from}/to/${dateRange.to}`);
+            return response.json();
+        }
     }
 
     public async allocateTrainingDate(entry: HistoryEntry): Promise<void> {
@@ -67,7 +73,7 @@ export default class ApiClient {
         let url = `${this.backendUrl}/exercises/${isoDate}/${exerciseCode}`;
         let response = await this.sendRequest(url, {
             method: "post",
-            body: JSON.stringify(this.fixExerciseSetData(setsData)),
+            body: JSON.stringify(setsData),
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
@@ -78,21 +84,5 @@ export default class ApiClient {
                 `Got non-OK response from setExercise ${response.statusText}.
                  Sent ${setsData.map(x => `${x.weight} x ${x.repetitions}`).join(',')} to ${url}`);
         }
-    }
-
-    private fixExerciseSetData(setsData: {
-        id: string,
-        repetitions: number | string,
-        weight: number | string
-    }[]): ExerciseSetData[] {
-        let result: ExerciseSetData[] = [];
-        setsData.forEach(element => {
-            result.push({
-                id: element.id,
-                repetitions: typeof element.repetitions === 'string' ? parseInt(element.repetitions) : element.repetitions,
-                weight: typeof element.weight === 'string' ? parseFloat(element.weight) : element.weight
-            });
-        });
-        return result;
     }
 }

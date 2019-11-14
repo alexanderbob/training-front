@@ -18,10 +18,10 @@
             </v-row>
             <v-row align="center" v-for="item in exerciseEntry.sets" :key="item.id">
               <v-col cols="6">
-                <v-text-field label="Weight" required v-model="item.weight" type="number" step="0.5" :disabled="isLoading"></v-text-field>
+                <v-text-field label="Weight" required v-model.number="item.weight" type="number" step="0.5" :disabled="isLoading"></v-text-field>
               </v-col>
               <v-col cols="5">
-                <v-text-field label="Reps" required v-model="item.repetitions" type="number" step="0.5" :disabled="isLoading"></v-text-field>
+                <v-text-field label="Reps" required v-model.number="item.repetitions" type="number" step="0.5" :disabled="isLoading"></v-text-field>
               </v-col>
               <v-col cols="1">
                 <v-btn text icon small color="red lighten-2" @click="removeItemHandler(item.id)" tabindex="-1" :disabled="isLoading">
