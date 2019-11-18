@@ -4,7 +4,7 @@
       v-bind:value="value"
       v-on:change="dateChangedHandler"
       v-on:update:picker-date="pickerDateHandler"
-      landscape
+      :landscape="!$vuetify.breakpoint.xsOnly"
       reactive
       type="date"
       min="2016-01-01"

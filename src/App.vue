@@ -1,6 +1,15 @@
 <template>
   <v-app>
-    <v-app-bar app clipped-left>
+    <v-app-bar app clipped-left v-if="$vuetify.breakpoint.xsOnly" hide-on-scroll>
+      <v-toolbar-title>YOBA</v-toolbar-title>
+      <v-spacer></v-spacer>
+      <v-toolbar-items>
+        <v-btn href="/" v-on:click.stop.prevent="handleClick"><v-icon>mdi-monitor-dashboard</v-icon></v-btn>
+        <v-btn href="/Weightlifting" v-on:click.stop.prevent="handleClick"><v-icon>mdi-weight-lifter</v-icon></v-btn>
+        <v-btn href="/Cycling" disabled v-on:click.stop.prevent="handleClick"><v-icon>mdi-bike</v-icon></v-btn>
+      </v-toolbar-items>
+    </v-app-bar>
+    <v-app-bar v-else app clipped-left>
       <v-toolbar-title>YOBA</v-toolbar-title>
       <v-spacer></v-spacer>
       <v-toolbar-items>

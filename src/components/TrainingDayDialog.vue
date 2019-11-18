@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="isDialogVisible" persistent>
+  <v-dialog v-model="isDialogVisible" persistent :fullscreen="$vuetify.breakpoint.xsOnly">
     <v-card>
       <v-card-title class="headline">Please choose a date</v-card-title>
       <v-card-text>
@@ -17,7 +17,7 @@
           @click="createButtonClickHandler"
           :disabled="isTrainingDayCreationDisabled"
         >Create</v-btn>
-        <v-btn @click="cancelButtonClickHandler">Cancel</v-btn>
+        <v-btn @click="cancelButtonClickHandler">Close</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -50,7 +50,7 @@ class TrainingDayDialog extends Vue {
 
   private get isTrainingDayCreationDisabled() {
     return (
-      !this.datePickerValue || this.trainingDates.includes(this.datePickerValue)
+      !this.datePickerValue || this.trainingDates.includes(this.datePickerValue) || this.isCalendarDisabled
     );
   }
 

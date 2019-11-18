@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="isEditExerciseDialogVisible" persistent>
+  <v-dialog v-model="isEditExerciseDialogVisible" persistent :fullscreen="$vuetify.breakpoint.xsOnly">
     <v-card>
       <v-card-title class="headline">Edit Exercise</v-card-title>
       <v-card-text>

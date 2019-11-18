@@ -48,7 +48,7 @@ export default class ApiClient {
         if (response.status !== 200) {
             throw new Error(
                 `Got non-OK response from allocateTrainingDate ${response.statusText}.
-                 Sent { title: ${entry.title}, date: ${entry.date}, subtitle: ${entry.subtitle} }`
+                 Sent { title: ${entry.title}, date: ${entry.date}, subtitle: ${entry.subTitle} }`
             );
         }
     }

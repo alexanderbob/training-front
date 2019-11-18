@@ -4,7 +4,7 @@ export interface EntryWithTitle {
 
 export interface HistoryEntry extends EntryWithTitle {
     date: string;
-    subtitle: string;
+    subTitle: string;
 }
 
 export interface ExerciseSetData {

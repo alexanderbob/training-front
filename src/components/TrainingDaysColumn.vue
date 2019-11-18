@@ -1,5 +1,5 @@
 <template>
-  <v-col cols="6">
+  <v-col sm="4">
     <v-list>
       <v-list-item v-on:click.stop="addNewButtonHandler">
         <v-list-item-action>
@@ -16,7 +16,7 @@
         <v-list-item v-for="(item) in orderedHistory" :key="item.date" :value="item.date">
           <v-list-item-content>
             <v-list-item-title v-html="item.title"></v-list-item-title>
-            <v-list-item-subtitle v-html="item.subtitle"></v-list-item-subtitle>
+            <v-list-item-subtitle v-html="item.subTitle"></v-list-item-subtitle>
           </v-list-item-content>
         </v-list-item>
       </v-list-item-group>

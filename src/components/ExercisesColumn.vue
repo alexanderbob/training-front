@@ -1,5 +1,5 @@
 <template>
-  <v-col cols="6">
+  <v-col sm="8">
     <v-list two-line>
       <v-list-item>
         <v-list-item-content>

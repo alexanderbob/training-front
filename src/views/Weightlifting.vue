@@ -1,5 +1,12 @@
 <template>
   <v-container fluid class="fill-height">
+    <v-progress-linear
+        :active="isLoading"
+        :indeterminate="isLoading"
+        absolute
+        top
+        color="deep-purple accent-4"
+      ></v-progress-linear>
     <!-- Create Training Day dialog -->
     <TrainingDayDialog
       :isDialogVisible="isTrainDayDialogVisible"
@@ -7,20 +14,20 @@
       v-on:hide="toggleCreateNewDayDialog"
       v-on:view-change="trainingCalendarChangeHandler"
       :trainingDates="getTrainingDates"
-      :isCalendarDisabled="!isDataLoaded"
+      :isCalendarDisabled="isLoading"
     ></TrainingDayDialog>
     <!-- Edit Exercise dialog -->
     <EditExerciseDialog
       :isEditExerciseDialogVisible="isEditExerciseDialogVisible"
       :exerciseEntry="currentExercise"
-      :isLoading="isEditExerciseLoading"
+      :isLoading="isLoading"
       v-on:input="addNewSetToExercise"
       v-on:save="applyExerciseChanges"
       v-on:remove="removeExerciseSet"
       v-on:hide="cancelEditExerciseChanges"
     ></EditExerciseDialog>
     <v-row align="stretch" justify="start">
-      <v-col cols="4">
+      <v-col sm="4">
         <v-btn color="primary" disabled>
           <v-icon>mdi-calendar-search</v-icon>Search
         </v-btn>
@@ -82,9 +89,8 @@ class Weightlifting extends Vue {
   private apiClient: ApiClient;
   private history: Dictionary<HistoryEntry> = {};
   private exercises: Dictionary<Dictionary<ExerciseEntry>> = {};
-  private isDataLoaded: boolean = false;
+  private isLoading: boolean = false;
   private bufferedExercises: Dictionary<ExerciseEntry> = {};
-  private isEditExerciseLoading: boolean = false;
   constructor() {
     super();
     this.apiClient = new ApiClient(Utils.BackendUrl);
@@ -122,7 +128,9 @@ class Weightlifting extends Vue {
       return;
     }
 
+    this.isLoading = true;
     this.apiClient.getExercises(this.selectedTrainingDate).then(v => {
+      this.isLoading = false;
       Object.keys(v).forEach(key => {
         v[key].id = Utils.generateUUID();
         v[key].sets.forEach(setEntry => {
@@ -140,9 +148,11 @@ class Weightlifting extends Vue {
         "Provided exercise '" + metadata.code + "' is already in collection!"
       );
     }
+    this.isLoading = true;
     this.apiClient
       .setExercise(this.selectedTrainingDate, metadata.code, [])
       .then(v => {
+        this.isLoading = false;
         let exercise: ExerciseEntry = {
           id: Utils.generateUUID(),
           metadata: metadata,
@@ -176,7 +186,7 @@ class Weightlifting extends Vue {
   }
 
   private applyExerciseChanges(exerciseEntry: ExerciseEntry) {
-    this.isEditExerciseLoading = true;
+    this.isLoading = true;
     this.apiClient
       .setExercise(
         this.selectedTrainingDate,
@@ -184,7 +194,7 @@ class Weightlifting extends Vue {
         exerciseEntry.sets
       )
       .then(v => {
-        this.isEditExerciseLoading = false;
+        this.isLoading = false;
         Vue.set<ExerciseEntry>(
           this.exercises[this.selectedTrainingDate],
           exerciseEntry.metadata.code,
@@ -222,7 +232,9 @@ class Weightlifting extends Vue {
     let td = new Date(`${newMonth}-01`);
     td.setMonth(td.getMonth() + 1);
     let to = Utils.isoDate(td);
+    this.isLoading = true;
     this.apiClient.getTrainingDays({from: from, to: to}).then(v => {
+      this.isLoading = false;
       let result: Dictionary<HistoryEntry> = {};
       v.forEach(element => {
         if (!(element.date in this.history)) {
@@ -244,25 +256,29 @@ class Weightlifting extends Vue {
     let dateToAllocate: HistoryEntry = {
       date: Utils.isoDate(date),
       title: Utils.readableDate(date),
-      subtitle: ""
+      subTitle: ""
     };
+    this.isLoading = true;
     this.apiClient.allocateTrainingDate(dateToAllocate).then(v => {
+      this.isLoading = false;
       Vue.set<HistoryEntry>(this.history, trainingDate, dateToAllocate);
     });
   }
 
   private created() {
-    this.apiClient.getTrainingDays().then(data => {
+    this.isLoading = true;
+    let p1 = this.apiClient.getTrainingDays();
+    let p2 = this.apiClient.availableExercises();
+    Promise.all([p1, p2]).then(v => {
+      this.isLoading = false;
       let result: Dictionary<HistoryEntry> = {};
-      data.forEach(element => {
+      v[0].forEach(element => {
         result[element.date] = element;
       });
-      this.isDataLoaded = true;
       this.history = result;
-    });
-    this.apiClient.availableExercises().then(data => {
-      this.exerciseRegistry = data;
-    });
+
+      this.exerciseRegistry = v[1];
+    })
   }
 }
 
