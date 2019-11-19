@@ -39,6 +39,7 @@
         :addNewButtonHandler="toggleCreateNewDayDialog"
         :history="history"
         :value="selectedTrainingDate"
+        :maxWidth="maximumColumnWidth"
         v-on:input="updateTrainDateItem"
       ></TrainingDaysColumn>
 
@@ -47,6 +48,7 @@
         :historyEntry="history[selectedTrainingDate]"
         :exercises="bufferedExercises"
         :exerciseNames="exerciseRegistry"
+        :maxWidth="maximumColumnWidth"
         v-on:input="editExerciseInput"
         v-on:create="addExerciseHandler"
       ></ExercisesColumn>
@@ -119,6 +121,14 @@ class Weightlifting extends Vue {
 
   private get getTrainingDates() {
     return Object.keys(this.history);
+  }
+
+  private get maximumColumnWidth() {
+    switch (this.$vuetify.breakpoint.name) {
+        case "xs":
+            return "370px";
+    }
+    return "";
   }
 
   private updateTrainDateItem(key: string) {
