@@ -24,3 +24,21 @@ export interface ExerciseMetadata {
     description: string;
 }
 
+export interface MinMaxAvgHistoricalItem {
+    min: number;
+    max: number;
+    average: number;
+}
+
+export interface ExerciseHistoricalItem {
+    date: string;
+    tonnage: number;
+    weight: MinMaxAvgHistoricalItem,
+    repetitions: MinMaxAvgHistoricalItem
+}
+
+export interface TimeSeriesMetadata {
+    measureCode: string;
+    measureName: string;
+    displayType: string;
+}

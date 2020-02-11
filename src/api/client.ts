@@ -1,4 +1,4 @@
-import { HistoryEntry, ExerciseEntry, ExerciseMetadata, ExerciseSetData } from '@/declarations/weightlifting';
+import { HistoryEntry, ExerciseEntry, ExerciseMetadata, ExerciseSetData, ExerciseHistoricalItem } from '@/declarations/weightlifting';
 import { Dictionary } from 'vue-router/types/router';
 
 export default class ApiClient {
@@ -51,6 +51,11 @@ export default class ApiClient {
                  Sent { title: ${entry.title}, date: ${entry.date}, subtitle: ${entry.subTitle} }`
             );
         }
+    }
+
+    public async getHistory(exerciseCode: string): Promise<ExerciseHistoricalItem[]> {
+        let response = await this.sendRequest(`${this.backendUrl}/exercises/history/${exerciseCode}`);
+        return response.json();
     }
 
     public async getExercises(isoDate: string): Promise<Dictionary<ExerciseEntry>> {

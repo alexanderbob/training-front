@@ -265,7 +265,7 @@ class Weightlifting extends Vue {
     }
     let dateToAllocate: HistoryEntry = {
       date: Utils.isoDate(date),
-      title: Utils.readableDate(date),
+      title: Utils.readableDate(date, false),
       subTitle: ""
     };
     this.isLoading = true;
